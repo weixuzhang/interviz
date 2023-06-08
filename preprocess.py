@@ -21,8 +21,8 @@ def generate_examples_lst(data_filepath, db_path):
                 )
             schema = schema_cache[db_id]
             example = {
-                "interations":[
-                    {"question": interation["utterance"],"query": interation["query"]} for interation in sample["interaction"]
+                "interactions":[
+                    {"question": interaction["utterance"],"query": interaction["query"]} for interaction in sample["interaction"]
                 ],
                 "final_question": sample["final"]["utterance"],
                 "final_query": sample["final"]["query"],
@@ -42,6 +42,30 @@ def generate_examples_lst(data_filepath, db_path):
             }
             examples.append(example)
     return examples
+
+
+
+def generate_schemas_lst(data_filepath, db_path):
+    # Generate examples
+    examples = generate_examples_lst(data_filepath, db_path)
+    # Serialize schema for each example and store unique schemas in a set
+    unique_schemas = set()
+    for example in examples:
+        serialized_schema = serialize_schema(
+            question="",
+            db_path=example["db_path"],
+            db_id=example["db_id"],
+            db_column_names=example["db_column_names"],
+            db_table_names=example["db_table_names"],
+            schema_serialization_type="peteshaw",
+            schema_serialization_randomized=False,
+            schema_serialization_with_db_id=True,
+            schema_serialization_with_db_content=False,
+            normalize_query=True,
+        )
+        unique_schemas.add(serialized_schema)
+    return list(unique_schemas)
+
 
 #### generate serialized schema
 def serialize_schema(
@@ -119,8 +143,8 @@ def serialize_schema(
 
 
 def sparc_add_schema(ex: dict) -> dict:
-    questions=[interation["question"] for interation in ex["interations"]]
-    queries=[interation["query"] for interation in ex["interations"]]
+    questions=[interaction["question"] for interaction in ex["interactions"]]
+    queries=[interaction["query"] for interaction in ex["interactions"]]
     serialized_schema = serialize_schema(
         question=ex["final_question"],
         db_path=ex["db_path"],
@@ -135,8 +159,8 @@ def sparc_add_schema(ex: dict) -> dict:
     )
     return {"question": questions,"queries":queries,"serialized_schema": serialized_schema}
 
-def sparc_add_interations(ex: dict) -> dict:
-    interations=[interation["question"] +" | "+interation["query"] for interation in ex["interations"]]
+def sparc_add_interactions(ex: dict) -> dict:
+    interactions=[interaction["question"] +" | "+interaction["query"] for interaction in ex["interactions"]]
     serialized_schema = serialize_schema(
         question=ex["final_question"],
         db_path=ex["db_path"],
@@ -149,11 +173,11 @@ def sparc_add_interations(ex: dict) -> dict:
         schema_serialization_with_db_content=False,
         normalize_query=True,
     )
-    return {"interations": interations,"serialized_schema": serialized_schema}
+    return {"interactions": interactions,"serialized_schema": serialized_schema}
 
-def sparc_add_serialized_interations(ex: dict) -> dict:
-    interations=[" | "+ interation["question"] +" | "+interation["query"] for interation in ex["interations"]]
-    serialized_inter="".join(interations)
+def sparc_add_serialized_interactions(ex: dict) -> dict:
+    interactions=[" | "+ interaction["question"] +" | "+interaction["query"] for interaction in ex["interactions"]]
+    serialized_inter="".join(interactions)
     serialized_schema = serialize_schema(
         question=ex["final_question"],
         db_path=ex["db_path"],
@@ -166,5 +190,5 @@ def sparc_add_serialized_interations(ex: dict) -> dict:
         schema_serialization_with_db_content=False,
         normalize_query=True,
     )
-    return {"interations": serialized_inter,"serialized_schema": serialized_schema}
+    return {"interactions": serialized_inter,"serialized_schema": serialized_schema}
 
